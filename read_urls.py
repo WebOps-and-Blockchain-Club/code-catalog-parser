@@ -50,14 +50,15 @@ def process_url(url):
         source_code = file.read()
         parsed_code = parse_class(source_code)
         if parsed_code:
-            return {"file_path": new_file_name, "parsed_code": parsed_code}
+            return {"file_name": new_file_name,"file_path": url ,"parsed_code": parsed_code}
         else:
             return None
 
 def write_output_to_file(output_data, output_file):
     with open(output_file, "w") as file:
         for result in output_data:
-            file.write(f"File: {result['file_path']}\n")
+            file.write(f"File: {result['file_name']}\n")
+            file.write(f"File Path: {result['file_path']}\n")
             file.write(json.dumps(result['parsed_code'], indent=2) + "\n")
             file.write("\n" + "-"*50 + "\n")
 
