@@ -1,0 +1,7 @@
+{
+  "dependencies": {
+    "@xenova/transformers": "^2.15.0",
+    "dotenv": "^16.4.2",
+    "github-repo-parser": "^1.0.7"
+  }
+}

@@ -1,6 +1,6 @@
 import subprocess
 
-node_process = subprocess.Popen(['node', 'index.js'], stdout=subprocess.PIPE, text=True)
+node_process = subprocess.Popen(["node", "index.js"], stdout=subprocess.PIPE, text=True)
 
 stdout, _ = node_process.communicate()
 
