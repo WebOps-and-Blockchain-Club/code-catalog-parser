@@ -1,12 +1,12 @@
 # Project Setup Instructions
 
-This Python script extracts and parses Python source code from github repo URL. It organizes class and function information, generating an output file (output.txt).
+This Python script extracts and parses Python source code from github repo URL. read_urls.py organizes class and function information, generating an output JSON file which is then updated by the model to include explanations for each function.
 
 ## Setup Instructions
 
 1. **In `index.js` :**
     ```bash
-    get_repo_raw_urls("https://github.com/rasbt/LLMs-from-scratch");
+    get_repo_raw_urls("https://github.com/saarthdeshpande/book-summarizer");
     ```
     Update the url with the desired github repository url. It will create a json file with the parsed URLs in the githubSources folder.
 
