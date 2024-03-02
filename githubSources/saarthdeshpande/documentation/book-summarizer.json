@@ -1,156 +1,166 @@
-{
-  "repo": "book-summarizer",
-  "code": [
-    {
-      "File": "bsCLI.py",
-      "File Path": "https://raw.githubusercontent.com/saarthdeshpande/book-summarizer/master/bsCLI.py",
-      "Code": {
-        "Independent Functions": [
-          {
-            "name": "dir_path",
-            "arguments": [
-              "path"
-            ],
-            "code": "def dir_path(path):\n    if os.path.exists(path):\n        return path\n    else:\n        raise argparse.ArgumentTypeError(f\"readable_dir:{path} is not a valid path\")",
-            "explanation": "Returns the path to a directory or raises an exception if it s not a valid directory."
-          }
+[
+  {
+    "bsCLI.py": [
+      {
+        "id": 1,
+        "name": "dir_path",
+        "code": "def dir_path(path):\n    if os.path.exists(path):\n        return path\n    else:\n        raise argparse.ArgumentTypeError(f\"readable_dir:{path} is not a valid path\")",
+        "explanation": "Returns the path to a directory or raises an exception if it s not a valid directory.",
+        "arguments": [
+          "path"
+        ],
+        "functionsCalled": []
+      }
+    ]
+  },
+  {
+    "mail.py": [
+      {
+        "id": 2,
+        "name": "send_fail",
+        "code": "def send_fail(receiver_address):\n    mail_content_file = open('fail_body.txt')\n    sender_address = 'YOUR_EMAIL_HERE'\n    sender_pass = 'PASS'\n    # Setup the MIME\n    message = MIMEMultipart()\n    message['From'] = \"Shanay Ghag and Saarth Deshpande\"\n    message['To'] = receiver_address\n    message['Subject'] = 'Chapterwise Summarization'\n    # The subject line\n    # The body and the attachments for the mail\n    message.attach(MIMEText(mail_content_file.read(), 'plain'))\n    session = smtplib.SMTP('smtp.gmail.com', 587)  # use gmail with port\n    session.starttls()  # enable security\n    session.login(sender_address, sender_pass)  # login with mail_id and password\n    text = message.as_string()\n    session.sendmail(sender_address, receiver_address, text)\n    session.quit()\n    print('Fail Mail Sent')",
+        "explanation": "Send a fail mail",
+        "arguments": [
+          "receiver_address"
+        ],
+        "functionsCalled": []
+      },
+      {
+        "id": 3,
+        "name": "send_mail",
+        "code": "def send_mail(zipfile_name, receiver_address):\n    mail_content_file = open('mail_body.txt')\n    sender_address = 'YOUR_EMAIL_HERE'\n    sender_pass = 'PASS'\n    # Setup the MIME\n    message = MIMEMultipart()\n    message['From'] = \"Shanay Ghag and Saarth Deshpande\"\n    message['To'] = receiver_address\n    message['Subject'] = 'Chapterwise Summarization'\n    # The subject line\n    # The body and the attachments for the mail\n    message.attach(MIMEText(mail_content_file.read(), 'plain'))\n    attach_file_name = f'{zipfile_name}'\n    attach_file = open(attach_file_name, 'rb')  # Open the file as binary mode\n    payload = MIMEBase('application', 'zip')\n    payload.set_payload(attach_file.read())\n    encoders.encode_base64(payload)  # encode the attachment\n\n    payload.add_header('Content-Disposition', f'attachment; filename= {attach_file_name}')\n    # add payload header with filename\n    message.attach(payload)\n    # Create SMTP session for sending the mail\n    session = smtplib.SMTP('smtp.gmail.com', 587)  # use gmail with port\n    session.starttls()  # enable security\n    session.login(sender_address, sender_pass)  # login with mail_id and password\n    text = message.as_string()\n    session.sendmail(sender_address, receiver_address, text)\n    session.quit()\n    print('Mail Sent')",
+        "explanation": "Send an email from a zip file",
+        "arguments": [
+          "zipfile_name",
+          "receiver_address"
+        ],
+        "functionsCalled": []
+      }
+    ]
+  },
+  {
+    "model.py": [
+      {
+        "id": 4,
+        "name": "cleanText",
+        "code": "def cleanText(text):\n    text = re.sub(r\"@[A-Za-z0-9]+\", ' ', text)\n    text = re.sub(r\"https?://[A-Za-z0-9./]+\", ' ', text)\n    text = re.sub(r\"[^a-zA-z.!?'0-9]\", ' ', text)\n    text = re.sub('\\t', ' ', text)\n    text = re.sub(r\" +\", ' ', text)\n    return text",
+        "explanation": "Cleans the text for use in the email.",
+        "arguments": [
+          "text"
+        ],
+        "functionsCalled": []
+      },
+      {
+        "id": 5,
+        "name": "getSummary",
+        "code": "def getSummary(text, tokenizer):\n    preprocess_text = text.strip().replace(\"\\n\", \"\")\n    t5_prepared_Text = \"summarize: \" + preprocess_text\n    tokenized_text = tokenizer.encode(t5_prepared_Text, return_tensors=\"pt\").to(device)\n\n    summary_ids = model.generate(tokenized_text,\n                                 num_beams=5,\n                                 no_repeat_ngram_size=2,\n                                 min_length=30,\n                                 max_length=96,\n                                 early_stopping=True)\n\n    output = tokenizer.decode(summary_ids[0], skip_special_tokens=True)\n    return output",
+        "explanation": "Get summary from text using tokenizer.",
+        "arguments": [
+          "text",
+          "tokenizer"
+        ],
+        "functionsCalled": []
+      },
+      {
+        "id": 6,
+        "name": "sentenceCorrection",
+        "code": "def sentenceCorrection(text):\n    correctedText = \"\"\n    parser = GingerIt()\n    sentences = sent_tokenize(text, language='english')\n    for sentence in sentences:\n        sentenceDict = parser.parse(sentence)\n        sentence = str(sentenceDict['result'])\n        correctedText += sentence\n\n    return correctedText",
+        "explanation": "Sentence correction.",
+        "arguments": [
+          "text"
+        ],
+        "functionsCalled": []
+      },
+      {
+        "id": 7,
+        "name": "summaryGeneration",
+        "code": "def summaryGeneration(mailid=None):\n    try:\n        txtFiles = []\n        for filename in os.listdir(app.config[\"PDF_UPLOADS\"]):\n            if fnmatch.fnmatch(filename, 'pdf_fileChapter*.txt'):\n                print(filename)\n                txtFiles.append(filename)\n\n        for fname in txtFiles:\n            summary = \"\"\n            print(\"Summarising: \", fname)\n            text = \"\"\n            with open(os.path.join(app.config['PDF_UPLOADS'] + '/' + fname), 'r', encoding=\"utf-8\") as f:\n                textLines = f.readlines()\n                for line in textLines:\n                    line = cleanText(line)\n                    line = line.replace(\"\\n\", \" \")\n                    text += line\n\n                textTokens = word_tokenize(text)\n                totalTokens = len(textTokens)\n                chunkCounter = 0\n                maxTokenLen = 400\n                chunkList = []\n                start = 0\n                end = maxTokenLen\n\n                if (totalTokens % maxTokenLen) == 0:\n                    totalChunks = int(totalTokens / maxTokenLen)\n\n                    for i in range(0, totalChunks):\n                        tempTokens = textTokens[start:end]\n                        chunkText = ' '.join([str(elem) for elem in tempTokens])\n                        chunkList.append(chunkText)\n                        start = end\n                        end += maxTokenLen\n                        chunkText = \"\"\n\n                else:\n                    totalChunks = int(totalTokens / maxTokenLen) + 1\n\n                    for i in range(0, (totalChunks - 1)):\n                        tempTokens = textTokens[start:end]\n                        chunkText = ' '.join([str(elem) for elem in tempTokens])\n                        chunkList.append(chunkText)\n                        start = end\n                        end += maxTokenLen\n                        chunkText = \"\"\n\n                    tempTokens = textTokens[start:totalTokens]\n                    chunkText = ' '.join([str(elem) for elem in tempTokens])\n                    chunkList.append(chunkText)\n\n                for chunk in chunkList:\n                    tempSummary = getSummary(chunk, tokenizer)\n                    summary += tempSummary\n\n                summary = sentenceCorrection(summary)\n\n                print(\"Summarisation complete!\")\n                fileName = fname[:-4] + \"_summary.txt\"\n                with open(os.path.join(app.config['PDF_UPLOADS'] + '/' + fileName), 'w', encoding=\"utf-8\") as f1:\n                    f1.write(summary)\n                print(\"Summary written to file!\")\n                f1.close()\n            f.close()\n            os.remove(os.path.join(app.config['PDF_UPLOADS'] + '/' + fname))\n        makezipAndCleanUp(mailid)\n    except Exception as e:\n        print(e)\n        send_fail(mailid)",
+        "explanation": "Generate a summary for the pdf file",
+        "arguments": [
+          "mailid"
+        ],
+        "functionsCalled": [
+          2,
+          4,
+          5,
+          6,
+          8
+        ]
+      },
+      {
+        "id": 8,
+        "name": "makezipAndCleanUp",
+        "code": "def makezipAndCleanUp(mailid=None):\n    # function to compress all summary text files into single zip file\n    # call mail function and send zip file\n    shutil.make_archive('summarized_chapters', 'zip', app.config['PDF_UPLOADS'])\n    for file in os.listdir(app.config['PDF_UPLOADS']):\n        os.remove(os.path.join(app.config['PDF_UPLOADS'] + '/' + file))\n    if mailid is not None:\n        send_mail('summarized_chapters.zip', mailid)\n    else:\n        print('\\nChapter-wise Summaries stored in summarized_chapters.zip')",
+        "explanation": "Create zip file of all summary text files and send mail to user.",
+        "arguments": [
+          "mailid"
+        ],
+        "functionsCalled": [
+          3
         ]
       }
-    },
-    {
-      "File": "imports.py",
-      "File Path": "https://raw.githubusercontent.com/saarthdeshpande/book-summarizer/master/imports.py",
-      "Code": {
-        "Independent Functions": []
-      }
-    },
-    {
-      "File": "mail.py",
-      "File Path": "https://raw.githubusercontent.com/saarthdeshpande/book-summarizer/master/mail.py",
-      "Code": {
-        "Independent Functions": [
-          {
-            "name": "send_fail",
-            "arguments": [
-              "receiver_address"
-            ],
-            "code": "def send_fail(receiver_address):\n    mail_content_file = open('fail_body.txt')\n    sender_address = 'YOUR_EMAIL_HERE'\n    sender_pass = 'PASS'\n    # Setup the MIME\n    message = MIMEMultipart()\n    message['From'] = \"Shanay Ghag and Saarth Deshpande\"\n    message['To'] = receiver_address\n    message['Subject'] = 'Chapterwise Summarization'\n    # The subject line\n    # The body and the attachments for the mail\n    message.attach(MIMEText(mail_content_file.read(), 'plain'))\n    session = smtplib.SMTP('smtp.gmail.com', 587)  # use gmail with port\n    session.starttls()  # enable security\n    session.login(sender_address, sender_pass)  # login with mail_id and password\n    text = message.as_string()\n    session.sendmail(sender_address, receiver_address, text)\n    session.quit()\n    print('Fail Mail Sent')",
-            "explanation": "Send a fail mail"
-          },
-          {
-            "name": "send_mail",
-            "arguments": [
-              "zipfile_name",
-              "receiver_address"
-            ],
-            "code": "def send_mail(zipfile_name, receiver_address):\n    mail_content_file = open('mail_body.txt')\n    sender_address = 'YOUR_EMAIL_HERE'\n    sender_pass = 'PASS'\n    # Setup the MIME\n    message = MIMEMultipart()\n    message['From'] = \"Shanay Ghag and Saarth Deshpande\"\n    message['To'] = receiver_address\n    message['Subject'] = 'Chapterwise Summarization'\n    # The subject line\n    # The body and the attachments for the mail\n    message.attach(MIMEText(mail_content_file.read(), 'plain'))\n    attach_file_name = f'{zipfile_name}'\n    attach_file = open(attach_file_name, 'rb')  # Open the file as binary mode\n    payload = MIMEBase('application', 'zip')\n    payload.set_payload(attach_file.read())\n    encoders.encode_base64(payload)  # encode the attachment\n\n    payload.add_header('Content-Disposition', f'attachment; filename= {attach_file_name}')\n    # add payload header with filename\n    message.attach(payload)\n    # Create SMTP session for sending the mail\n    session = smtplib.SMTP('smtp.gmail.com', 587)  # use gmail with port\n    session.starttls()  # enable security\n    session.login(sender_address, sender_pass)  # login with mail_id and password\n    text = message.as_string()\n    session.sendmail(sender_address, receiver_address, text)\n    session.quit()\n    print('Mail Sent')",
-            "explanation": "Send an email from a zip file"
-          }
+    ]
+  },
+  {
+    "preprocess.py": [
+      {
+        "id": 9,
+        "name": "splitChapters",
+        "code": "def splitChapters(filename, mailid=None):\n    checkFlag = 0\n    skipCount = 0\n    flag = 0\n    chapterNumber = 0\n    filename = filename[:-4]\n    file = filename + '.txt'\n    with open(file, 'r', encoding='utf-8') as f1:\n        lines = f1.readlines()\n        print('Total Number of Lines:', len(lines))\n        for line in lines:\n            words = ['CONTENTS', 'Contents']\n            ignoreWords = ['ACKNOWLEDGEMENT', 'INDEX', 'Subject Index']\n            tokens = line.split()\n            check = any(item in words for item in tokens)\n\n            if check is True:\n                print('Contents page found!\\n')\n                checkFlag = 1\n                skipCount = 40\n                continue\n\n            elif checkFlag == 1 and skipCount > 0:\n                skipCount -= 1\n                continue\n\n            pattern = re.compile(r'CHAPTER')\n            foundChapter = re.search(pattern, line)\n\n            if foundChapter:\n                flag = 1\n                chapterNumber += 1\n                counter = 0\n                continue\n\n            elif flag == 1:\n                if counter == 0:\n                    counter += 1\n                    print('Chapter', chapterNumber, 'found! Writing to a txt file')\n                    file = filename + 'Chapter' + str(chapterNumber) + '.txt'\n                    with open(file, 'w', encoding='utf-8') as f2:\n                        f2.write(line)\n                    f2.close()\n                else:\n                    print('Writing chapter', chapterNumber, '!\\n')\n                    file = filename + 'Chapter' + str(chapterNumber) + '.txt'\n                    with open(file, 'a', encoding='utf-8') as f2:\n                        f2.write(line)\n                    f2.close()\n                continue\n\n            ignoreCheck = any(item in ignoreWords for item in tokens)\n            if ignoreCheck is True:\n                print('All Chapters written!\\n')\n                break\n\n        if flag == 0:\n            print('No chapters in book! Writing entire book!')\n            with open(filename + 'ChapterAll.txt', 'w', encoding=\"utf-8\") as f2:\n                f2.writelines(lines)\n            f2.close()\n            print(\"Done writing!\")\n    f1.close()\n    try:\n        os.remove(os.path.join(app.config['PDF_UPLOADS'] + '/pdf_file.pdf'))\n        os.remove(os.path.join(app.config['PDF_UPLOADS'] + '/pdf_file.txt'))\n    except Exception as e:\n        print(e)\n        pass\n    finally:\n        summaryGeneration(mailid)",
+        "explanation": "This function splits a file into chapters and writes them to a file.",
+        "arguments": [
+          "filename",
+          "mailid"
+        ],
+        "functionsCalled": [
+          7
+        ]
+      },
+      {
+        "id": 10,
+        "name": "pdfParser",
+        "code": "def pdfParser(filename, mailid=None):\n    fp = open(filename, 'rb')\n    rsrcmgr = PDFResourceManager()\n    retstr = io.StringIO()\n    laparams = LAParams()\n    device = TextConverter(rsrcmgr, retstr, laparams=laparams)\n    interpreter = PDFPageInterpreter(rsrcmgr, device)\n\n    for page in PDFPage.get_pages(fp, check_extractable=False):\n        interpreter.process_page(page)\n        data = retstr.getvalue()\n\n    print('Converting PDF to txt file.')\n    file = filename[:-4] + '.txt'\n    with open(file, 'w', encoding='utf-8') as f:\n        f.write(data)\n    f.close()\n    print('Successfully converted PDF to txt.')\n    splitChapters(filename, mailid)",
+        "explanation": "Parse a PDF file and split the chapters into individual pages.",
+        "arguments": [
+          "filename",
+          "mailid"
+        ],
+        "functionsCalled": [
+          9
         ]
       }
-    },
-    {
-      "File": "model.py",
-      "File Path": "https://raw.githubusercontent.com/saarthdeshpande/book-summarizer/master/model.py",
-      "Code": {
-        "Independent Functions": [
-          {
-            "name": "cleanText",
-            "arguments": [
-              "text"
-            ],
-            "code": "def cleanText(text):\n    text = re.sub(r\"@[A-Za-z0-9]+\", ' ', text)\n    text = re.sub(r\"https?://[A-Za-z0-9./]+\", ' ', text)\n    text = re.sub(r\"[^a-zA-z.!?'0-9]\", ' ', text)\n    text = re.sub('\\t', ' ', text)\n    text = re.sub(r\" +\", ' ', text)\n    return text",
-            "explanation": "Cleans the text for use in the email."
-          },
-          {
-            "name": "getSummary",
-            "arguments": [
-              "text",
-              "tokenizer"
-            ],
-            "code": "def getSummary(text, tokenizer):\n    preprocess_text = text.strip().replace(\"\\n\", \"\")\n    t5_prepared_Text = \"summarize: \" + preprocess_text\n    tokenized_text = tokenizer.encode(t5_prepared_Text, return_tensors=\"pt\").to(device)\n\n    summary_ids = model.generate(tokenized_text,\n                                 num_beams=5,\n                                 no_repeat_ngram_size=2,\n                                 min_length=30,\n                                 max_length=96,\n                                 early_stopping=True)\n\n    output = tokenizer.decode(summary_ids[0], skip_special_tokens=True)\n    return output",
-            "explanation": "Get summary from text using tokenizer."
-          },
-          {
-            "name": "sentenceCorrection",
-            "arguments": [
-              "text"
-            ],
-            "code": "def sentenceCorrection(text):\n    correctedText = \"\"\n    parser = GingerIt()\n    sentences = sent_tokenize(text, language='english')\n    for sentence in sentences:\n        sentenceDict = parser.parse(sentence)\n        sentence = str(sentenceDict['result'])\n        correctedText += sentence\n\n    return correctedText",
-            "explanation": "Sentence correction."
-          },
-          {
-            "name": "summaryGeneration",
-            "arguments": [
-              "mailid"
-            ],
-            "code": "def summaryGeneration(mailid=None):\n    try:\n        txtFiles = []\n        for filename in os.listdir(app.config[\"PDF_UPLOADS\"]):\n            if fnmatch.fnmatch(filename, 'pdf_fileChapter*.txt'):\n                print(filename)\n                txtFiles.append(filename)\n\n        for fname in txtFiles:\n            summary = \"\"\n            print(\"Summarising: \", fname)\n            text = \"\"\n            with open(os.path.join(app.config['PDF_UPLOADS'] + '/' + fname), 'r', encoding=\"utf-8\") as f:\n                textLines = f.readlines()\n                for line in textLines:\n                    line = cleanText(line)\n                    line = line.replace(\"\\n\", \" \")\n                    text += line\n\n                textTokens = word_tokenize(text)\n                totalTokens = len(textTokens)\n                chunkCounter = 0\n                maxTokenLen = 400\n                chunkList = []\n                start = 0\n                end = maxTokenLen\n\n                if (totalTokens % maxTokenLen) == 0:\n                    totalChunks = int(totalTokens / maxTokenLen)\n\n                    for i in range(0, totalChunks):\n                        tempTokens = textTokens[start:end]\n                        chunkText = ' '.join([str(elem) for elem in tempTokens])\n                        chunkList.append(chunkText)\n                        start = end\n                        end += maxTokenLen\n                        chunkText = \"\"\n\n                else:\n                    totalChunks = int(totalTokens / maxTokenLen) + 1\n\n                    for i in range(0, (totalChunks - 1)):\n                        tempTokens = textTokens[start:end]\n                        chunkText = ' '.join([str(elem) for elem in tempTokens])\n                        chunkList.append(chunkText)\n                        start = end\n                        end += maxTokenLen\n                        chunkText = \"\"\n\n                    tempTokens = textTokens[start:totalTokens]\n                    chunkText = ' '.join([str(elem) for elem in tempTokens])\n                    chunkList.append(chunkText)\n\n                for chunk in chunkList:\n                    tempSummary = getSummary(chunk, tokenizer)\n                    summary += tempSummary\n\n                summary = sentenceCorrection(summary)\n\n                print(\"Summarisation complete!\")\n                fileName = fname[:-4] + \"_summary.txt\"\n                with open(os.path.join(app.config['PDF_UPLOADS'] + '/' + fileName), 'w', encoding=\"utf-8\") as f1:\n                    f1.write(summary)\n                print(\"Summary written to file!\")\n                f1.close()\n            f.close()\n            os.remove(os.path.join(app.config['PDF_UPLOADS'] + '/' + fname))\n        makezipAndCleanUp(mailid)\n    except Exception as e:\n        print(e)\n        send_fail(mailid)",
-            "explanation": "Generate a summary for the pdf file"
-          },
-          {
-            "name": "makezipAndCleanUp",
-            "arguments": [
-              "mailid"
-            ],
-            "code": "def makezipAndCleanUp(mailid=None):\n    # function to compress all summary text files into single zip file\n    # call mail function and send zip file\n    shutil.make_archive('summarized_chapters', 'zip', app.config['PDF_UPLOADS'])\n    for file in os.listdir(app.config['PDF_UPLOADS']):\n        os.remove(os.path.join(app.config['PDF_UPLOADS'] + '/' + file))\n    if mailid is not None:\n        send_mail('summarized_chapters.zip', mailid)\n    else:\n        print('\\nChapter-wise Summaries stored in summarized_chapters.zip')",
-            "explanation": "Create zip file of all summary text files and send mail to user."
-          }
+    ]
+  },
+  {
+    "views.py": [
+      {
+        "id": 11,
+        "name": "allowed_pdf",
+        "code": "def allowed_pdf(filename):\n    if not \".\" in filename:\n        return False\n    ext = filename.rsplit(\".\", 1)[1]\n    if ext.upper() in app.config[\"ALLOWED_EXTENSIONS\"]:\n        return True\n    return False",
+        "explanation": "Check if the file is a PDF file.",
+        "arguments": [
+          "filename"
+        ],
+        "functionsCalled": []
+      },
+      {
+        "id": 12,
+        "name": "redirect_to_site",
+        "code": "def redirect_to_site():\n    return redirect(request.url + 'upload-pdf')",
+        "explanation": "Redirects to the site s default page.",
+        "arguments": [],
+        "functionsCalled": []
+      },
+      {
+        "id": 13,
+        "name": "upload_pdf",
+        "code": "def upload_pdf():\n    if request.method == \"POST\":\n        if request.files:\n            pdf = request.files[\"pdf\"]\n            mail = request.form['email']\n\n            if pdf.filename == \"\":\n                return render_template('public/upload_pdf.html')\n            if not allowed_pdf(pdf.filename):\n                return render_template('public/upload_pdf.html')\n            else:\n                filename = 'pdf_file.pdf'\n                pdf.save(os.path.join(app.config[\"PDF_UPLOADS\"], filename))\n                thread = Thread(target = pdfParser, kwargs={'filename': os.path.join(app.config[\"PDF_UPLOADS\"], 'pdf_file.pdf'), 'mailid': f'{mail}'})\n                thread.start()\n                return render_template('public/upload_pdf.html')\n        return redirect(request.url)\n    return render_template('public/upload_pdf.html')",
+        "explanation": "Upload a PDF to the user.",
+        "arguments": [],
+        "functionsCalled": [
+          11
         ]
       }
-    },
-    {
-      "File": "preprocess.py",
-      "File Path": "https://raw.githubusercontent.com/saarthdeshpande/book-summarizer/master/preprocess.py",
-      "Code": {
-        "Independent Functions": [
-          {
-            "name": "splitChapters",
-            "arguments": [
-              "filename",
-              "mailid"
-            ],
-            "code": "def splitChapters(filename, mailid=None):\n    checkFlag = 0\n    skipCount = 0\n    flag = 0\n    chapterNumber = 0\n    filename = filename[:-4]\n    file = filename + '.txt'\n    with open(file, 'r', encoding='utf-8') as f1:\n        lines = f1.readlines()\n        print('Total Number of Lines:', len(lines))\n        for line in lines:\n            words = ['CONTENTS', 'Contents']\n            ignoreWords = ['ACKNOWLEDGEMENT', 'INDEX', 'Subject Index']\n            tokens = line.split()\n            check = any(item in words for item in tokens)\n\n            if check is True:\n                print('Contents page found!\\n')\n                checkFlag = 1\n                skipCount = 40\n                continue\n\n            elif checkFlag == 1 and skipCount > 0:\n                skipCount -= 1\n                continue\n\n            pattern = re.compile(r'CHAPTER')\n            foundChapter = re.search(pattern, line)\n\n            if foundChapter:\n                flag = 1\n                chapterNumber += 1\n                counter = 0\n                continue\n\n            elif flag == 1:\n                if counter == 0:\n                    counter += 1\n                    print('Chapter', chapterNumber, 'found! Writing to a txt file')\n                    file = filename + 'Chapter' + str(chapterNumber) + '.txt'\n                    with open(file, 'w', encoding='utf-8') as f2:\n                        f2.write(line)\n                    f2.close()\n                else:\n                    print('Writing chapter', chapterNumber, '!\\n')\n                    file = filename + 'Chapter' + str(chapterNumber) + '.txt'\n                    with open(file, 'a', encoding='utf-8') as f2:\n                        f2.write(line)\n                    f2.close()\n                continue\n\n            ignoreCheck = any(item in ignoreWords for item in tokens)\n            if ignoreCheck is True:\n                print('All Chapters written!\\n')\n                break\n\n        if flag == 0:\n            print('No chapters in book! Writing entire book!')\n            with open(filename + 'ChapterAll.txt', 'w', encoding=\"utf-8\") as f2:\n                f2.writelines(lines)\n            f2.close()\n            print(\"Done writing!\")\n    f1.close()\n    try:\n        os.remove(os.path.join(app.config['PDF_UPLOADS'] + '/pdf_file.pdf'))\n        os.remove(os.path.join(app.config['PDF_UPLOADS'] + '/pdf_file.txt'))\n    except Exception as e:\n        print(e)\n        pass\n    finally:\n        summaryGeneration(mailid)",
-            "explanation": "This function splits a file into chapters and writes them to a file."
-          },
-          {
-            "name": "pdfParser",
-            "arguments": [
-              "filename",
-              "mailid"
-            ],
-            "code": "def pdfParser(filename, mailid=None):\n    fp = open(filename, 'rb')\n    rsrcmgr = PDFResourceManager()\n    retstr = io.StringIO()\n    laparams = LAParams()\n    device = TextConverter(rsrcmgr, retstr, laparams=laparams)\n    interpreter = PDFPageInterpreter(rsrcmgr, device)\n\n    for page in PDFPage.get_pages(fp, check_extractable=False):\n        interpreter.process_page(page)\n        data = retstr.getvalue()\n\n    print('Converting PDF to txt file.')\n    file = filename[:-4] + '.txt'\n    with open(file, 'w', encoding='utf-8') as f:\n        f.write(data)\n    f.close()\n    print('Successfully converted PDF to txt.')\n    splitChapters(filename, mailid)",
-            "explanation": "Parse a PDF file and split the chapters into individual pages."
-          }
-        ]
-      }
-    },
-    {
-      "File": "views.py",
-      "File Path": "https://raw.githubusercontent.com/saarthdeshpande/book-summarizer/master/views.py",
-      "Code": {
-        "Independent Functions": [
-          {
-            "name": "allowed_pdf",
-            "arguments": [
-              "filename"
-            ],
-            "code": "def allowed_pdf(filename):\n    if not \".\" in filename:\n        return False\n    ext = filename.rsplit(\".\", 1)[1]\n    if ext.upper() in app.config[\"ALLOWED_EXTENSIONS\"]:\n        return True\n    return False",
-            "explanation": "Check if the file is a PDF file."
-          },
-          {
-            "name": "redirect_to_site",
-            "arguments": [],
-            "code": "def redirect_to_site():\n    return redirect(request.url + 'upload-pdf')",
-            "explanation": "Redirects to the site s default page."
-          },
-          {
-            "name": "upload_pdf",
-            "arguments": [],
-            "code": "def upload_pdf():\n    if request.method == \"POST\":\n        if request.files:\n            pdf = request.files[\"pdf\"]\n            mail = request.form['email']\n\n            if pdf.filename == \"\":\n                return render_template('public/upload_pdf.html')\n            if not allowed_pdf(pdf.filename):\n                return render_template('public/upload_pdf.html')\n            else:\n                filename = 'pdf_file.pdf'\n                pdf.save(os.path.join(app.config[\"PDF_UPLOADS\"], filename))\n                thread = Thread(target = pdfParser, kwargs={'filename': os.path.join(app.config[\"PDF_UPLOADS\"], 'pdf_file.pdf'), 'mailid': f'{mail}'})\n                thread.start()\n                return render_template('public/upload_pdf.html')\n        return redirect(request.url)\n    return render_template('public/upload_pdf.html')",
-            "explanation": "Upload a PDF to the user."
-          }
-        ]
-      }
-    }
-  ]
-}
+    ]
+  }
+]

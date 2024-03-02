@@ -14,17 +14,52 @@ def runModel(input):
     return output
 
 
-def generate(code, url):
-    print("Generating documentation for:", code["repo"])
-    for result in code["code"]:
-        for function in result["Code"]["Independent Functions"]:
-            explanation = runModel(function["code"])
-            print(function["name"], explanation)
-            function["explanation"] = explanation
-    with open(url, "r+") as docFile:
+def generate(sourceCode, path):
+    print("Generating documentation for:", path)
+
+    repoFiles = []
+    file = {}
+    index = []
+
+    for result in sourceCode:
+
+        explanation = runModel(result["code"])
+
+        if (sourceCode[result["id"] - 2]["file_name"] == result["file_name"]) or (
+            result["id"] == 1
+        ):
+            index.append(
+                {
+                    "id": result["id"],
+                    "name": result["function_name"],
+                    "code": result["code"],
+                    "explanation": explanation,
+                    "arguments": result["arguments"],
+                    "functionsCalled": result["functions_called"],
+                }
+            )
+            file[result["file_name"]] = index
+        else:
+            repoFiles.append(file)
+            file = {}
+            index = []
+            index.append(
+                {
+                    "id": result["id"],
+                    "name": result["function_name"],
+                    "code": result["code"],
+                    "explanation": explanation,
+                    "arguments": result["arguments"],
+                    "functionsCalled": result["functions_called"],
+                }
+            )
+
+    repoFiles.append(file)
+
+    with open(path, "w+") as docFile:
         docFile.seek(0)
         docFile.truncate()
-        docFile.write(json.dumps(code, indent=2))
+        docFile.write(json.dumps(repoFiles, indent=2))
         print("Finished documentation generation.")
 
 
@@ -33,11 +68,8 @@ def loadSource():
     repo = input("Enter the repo name:")
     file = "githubSources/" + dir + "/documentation/" + repo + ".json"
     with open(file, "r") as sourceCode:
-        parsed_json = json.load(sourceCode)
-        if parsed_json["repo"] == repo:
-            generate(parsed_json, file)
-        else:
-            print("There has been an error in fetching the file!")
+        parsedJson = json.load(sourceCode)
+        generate(parsedJson, file)
 
 
 def main():
