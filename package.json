@@ -7,6 +7,6 @@
     "dotenv": "^16.4.1",
     "fs": "^0.0.1-security",
     "github-repo-parser": "^1.0.7",
-    "@xenova/transformers": "^2.15.0",
+    "@xenova/transformers": "^2.15.0"
   }
 }
