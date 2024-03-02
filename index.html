@@ -5,7 +5,6 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Document</title>
-    <link rel="stylesheet" href="stylesheet.css">
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -201,218 +200,208 @@
         </script>
 
     <script>
-        let codeEditor = ace.edit("editorCode");
-        var input_code = codeEditor.getValue();
-        var lang = 'py';
+        let doc;
+        (async () => {
+            try {
+                const res = await fetch('./githubsources/documentation/doc.json')
+                    .then(response => response.json())
+                    .then(data => {
+                        doc = data;
+                        let codeEditor = ace.edit("editorCode");
+                        var input_code = codeEditor.getValue();
+                        var lang = 'py';
+                        console.log(doc);
+                        let current_filename;
+                        let currentfileFunctions;
+                        const filelist = document.getElementById("file-list");
+                        const heading = document.getElementById("heading");
+                        const content = document.getElementById("content");
+                        const functionDetails = content.querySelector(".function-details");
 
-        let current_filename;
-        let currentfileFunctions;
-        const doc = {
-            src: {
-                dir: {
-                    index: [
-                        { "name": "function a", "code": "print('Hi')", "explanation": "e" },
-                        { "name": "function", "code": "asdf", "explanation": "eudfdtsfc" }
-                    ],
-                    dr2: [
-                        { "name": "function", "code": "fdstcfghcdfc", "explanation": "eudfdtsfc" },
-                        { "name": "function c", "code": "a", "explanation": "sun" }
-                    ],
-                },
-                file3: [
-                    { "name": "function d", "code": "moon", "explanation": "eudfdtsfc" },
-                    { "name": "function", "code": "asdf", "explanation": "eudfdtsfc" }
-                ],
-            },
-            "package.json": [
-                { "name": "function", "code": "fdstcfghcdfc", "explanation": "eudfdtsfc" },
-                { "name": "fon", "code": "asdf", "explanation": "eudfdtsfc" }
-            ],
-        };
+                        function select_func(node) {
+                            console.log(current_filename);
+                            console.log(currentfileFunctions);
+                            const funcArr = currentfileFunctions;
+                            const selectElement = document.createElement('select');
+                            funcArr.forEach(obj => {
+                                const optionElement = document.createElement('option');
+                                optionElement.textContent = obj.name;
+                                optionElement.value = obj.name;
+                                selectElement.appendChild(optionElement);
+                            });
+                            console.log('selectElement', selectElement);
+                            const divEle = document.getElementsByClassName('select_function')[0];
+                            divEle.appendChild(selectElement);
 
+                            selectElement.addEventListener('change', (e) => {
+                                const selectedFunc = e.target.value;
+                                const func = currentfileFunctions.find(obj => obj.name === selectedFunc)
+                                console.log(func.code);
+                                deleteCode();
+                                let currentPosition = codeEditor.getCursorPosition();
+                                codeEditor.session.insert(currentPosition, func.code);
 
-        const filelist = document.getElementById("file-list");
-        const heading = document.getElementById("heading");
-        const content = document.getElementById("content");
-        const functionDetails = content.querySelector(".function-details");
+                            })
 
+                        }
 
-        function select_func(node) {
-            console.log(current_filename);
-            console.log(currentfileFunctions);
-            const funcArr = currentfileFunctions;
-            const selectElement = document.createElement('select');
-            funcArr.forEach(obj => {
-                const optionElement = document.createElement('option');
-                optionElement.textContent = obj.name;
-                optionElement.value = obj.name;
-                selectElement.appendChild(optionElement);
-            });
-            console.log('selectElement', selectElement);
-            const divEle = document.getElementsByClassName('select_function')[0];
-            divEle.appendChild(selectElement);
+                        function deleteCode() {
+                            let rowCount = codeEditor.session.getLength();
+                            let columnCount = codeEditor.session.getLine(rowCount - 1).length;
+                            let range = new ace.Range(0, 0, rowCount - 1, columnCount);
+                            codeEditor.selection.setRange(range);
+                            codeEditor.session.remove(range);
+                        }
 
-            selectElement.addEventListener('change', (e) => {
-                const selectedFunc = e.target.value;
-                const func = currentfileFunctions.find(obj => obj.name === selectedFunc)
-                console.log(func.code);
-                deleteCode();
-                let currentPosition = codeEditor.getCursorPosition();
-                codeEditor.session.insert(currentPosition, func.code);
-
-            })
-
-        }
-
-        function deleteCode() {
-            let rowCount = codeEditor.session.getLength();
-            let columnCount = codeEditor.session.getLine(rowCount - 1).length;
-            let range = new ace.Range(0, 0, rowCount - 1, columnCount);
-            codeEditor.selection.setRange(range);
-            codeEditor.session.remove(range);
-        }
-
-        function populateDirectoryList(node, parentPath = "") {
-            const ul = document.createElement("ul");
-            for (const key in node) {
-                const li = document.createElement("li");
-                if (Array.isArray(node[key])) {
-                    li.textContent = key;
-                    li.setAttribute("data-filepath", `${parentPath}/${key}`);
-                    li.addEventListener("click", () => {
-                        heading.textContent = key;
-                        current_filename = key;
-                        currentfileFunctions = node[key];
-                        content.innerHTML = "";
-                        functionDetails.querySelector("h3").textContent = "";
-                        functionDetails.querySelector(".code").textContent = "";
-                        functionDetails.querySelector(".explanation").textContent = "";
-                        const select_function = document.getElementsByClassName('select_function')[0];
-                        select_function.innerHTML = '';
-                        select_func(doc);
+                        function populateDirectoryList(node, parentPath = "") {
+                            const ul = document.createElement("ul");
+                            for (const key in node) {
+                                const li = document.createElement("li");
+                                if (Array.isArray(node[key])) {
+                                    li.textContent = key;
+                                    li.setAttribute("data-filepath", `${parentPath}/${key}`);
+                                    li.addEventListener("click", () => {
+                                        heading.textContent = key;
+                                        current_filename = key;
+                                        currentfileFunctions = node[key];
+                                        content.innerHTML = "";
+                                        functionDetails.querySelector("h3").textContent = "";
+                                        functionDetails.querySelector(".code").textContent = "";
+                                        functionDetails.querySelector(".explanation").textContent = "";
+                                        const select_function = document.getElementsByClassName('select_function')[0];
+                                        select_function.innerHTML = '';
+                                        select_func(doc);
 
 
 
-                        for (const item of node[key]) {
-                            const section = document.createElement("section");
-                            section.innerHTML = `
+                                        for (const item of node[key]) {
+                                            const section = document.createElement("section");
+                                            section.innerHTML = `
                                                 <div>
                                                  <h3>${item.name || key}</h3>
                                                  <p class="explanation">${item.explanation || ""}</p>
                                                  </div>  
                                                 `;
-                            content.appendChild(section);
-                            codeEditor.setValue(node[key][0].code);
+                                            content.appendChild(section);
+                                            codeEditor.setValue(node[key][0].code);
+                                        }
+                                    });
+                                } else if (typeof node[key] === "object") {
+                                    li.textContent = key;
+                                    current_filename = key;
+                                    currentfileFunctions = node[key];
+                                    li.appendChild(populateDirectoryList(node[key], `${parentPath}/${key}`));
+                                } else {
+                                    const fileName = key;
+                                    const filePath = `${parentPath}/${fileName}`;
+                                    li.textContent = fileName;
+                                    li.setAttribute("data-filepath", filePath);
+                                    li.addEventListener("click", () => {
+                                        const fileData = node[fileName];
+                                        heading.textContent = fileName;
+                                        functionDetails.querySelector("h3").textContent = fileData.name || "";
+                                        functionDetails.querySelector(".code").textContent = fileData.code || fileData;
+                                        functionDetails.querySelector(".explanation").textContent = fileData.explanation || "";
+                                        codeEditor.setValue("");
+                                    });
+                                }
+                                ul.appendChild(li);
+                            }
+                            return ul;
                         }
-                    });
-                } else if (typeof node[key] === "object") {
-                    li.textContent = key;
-                    current_filename = key;
-                    currentfileFunctions = node[key];
-                    li.appendChild(populateDirectoryList(node[key], `${parentPath}/${key}`));
-                } else {
-                    const fileName = key;
-                    const filePath = `${parentPath}/${fileName}`;
-                    li.textContent = fileName;
-                    li.setAttribute("data-filepath", filePath);
-                    li.addEventListener("click", () => {
-                        const fileData = node[fileName];
-                        heading.textContent = fileName;
-                        functionDetails.querySelector("h3").textContent = fileData.name || "";
-                        functionDetails.querySelector(".code").textContent = fileData.code || fileData;
-                        functionDetails.querySelector(".explanation").textContent = fileData.explanation || "";
-                        codeEditor.setValue("");
-                    });
-                }
-                ul.appendChild(li);
-            }
-            return ul;
-        }
-        filelist.appendChild(populateDirectoryList(doc));
+                        filelist.appendChild(populateDirectoryList(doc));
 
 
-        const executeCode = document.querySelector('.editor__run');
-        async function code_execution(input_data, lang, url) {
-            try {
-                const response = await fetch(url, {
-                    method: 'POST',
-                    headers: {
-                        'Content-type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        'title': lang,
-                        'body': input_data,
-                    }),
-                })
-                if (!response.ok) {
-                    throw new Error(`HTTP Error, Status code:${response.status}`)
-                }
-                return response.json();
+                        const executeCode = document.querySelector('.editor__run');
+                        async function code_execution(input_data, lang, url) {
+                            try {
+                                const response = await fetch(url, {
+                                    method: 'POST',
+                                    headers: {
+                                        'Content-type': 'application/json',
+                                    },
+                                    body: JSON.stringify({
+                                        'title': lang,
+                                        'body': input_data,
+                                    }),
+                                })
+                                if (!response.ok) {
+                                    throw new Error(`HTTP Error, Status code:${response.status}`)
+                                }
+                                return response.json();
+                            } catch (error) {
+                                console.error(error);
+                            }
+                        }
+
+
+                        function changeLanguage() {
+                            const select_lang = document.getElementById('languages');
+                            lang = select_lang.value;
+                            const ele = document.getElementById('editorCode');
+                            if (lang === 'py') {
+                                codeEditor.session.setMode('ace/mode/python')
+                                codeEditor.setOptions({
+                                    enableBasicAutocompletion: true,
+                                    enableLiveAutocompletion: true,
+                                })
+                            }
+                            else if (lang === 'js') {
+                                codeEditor.session.setMode('ace/mode/javascript')
+                                codeEditor.setOptions({
+                                    enableBasicAutocompletion: true,
+                                    enableLiveAutocompletion: true,
+                                })
+                            }
+                            else if (lang === 'cpp') {
+                                codeEditor.session.setMode('ace/mode/c_cpp')
+                                codeEditor.setOptions({
+                                    enableBasicAutocompletion: true,
+                                    enableLiveAutocompletion: true,
+                                })
+                            }
+                            else if (lang === 'ts') {
+                                codeEditor.session.setMode('ace/mode/typescript')
+                                codeEditor.setOptions({
+                                    enableBasicAutocompletion: true,
+                                    enableLiveAutocompletion: true,
+                                })
+                            }
+                        }
+                        let editorLib = {
+                            init() {
+                                codeEditor.setOptions({
+                                    fontFamily: 'Arial',
+                                    fontSize: '12pt',
+                                })
+
+                                codeEditor.setTheme("ace/theme/monokai");
+
+                                executeCode.addEventListener('click', async () => {
+                                    input_code = codeEditor.getValue();
+                                    try {
+                                        const response = await code_execution(input_code, lang, 'http://localhost:3002/code');
+                                        const data = response.output;
+                                        console.log(response);
+                                        const linesArray = data.split('\n');
+                                        const output_element = document.getElementsByClassName('editor__console')[0];
+                                        const lines = linesArray.map(line => `<li style='color:black; list-style-type: none; ' >${line}</li>`).join(' ');
+                                        output_element.innerHTML = lines;
+                                    } catch (err) {
+                                        console.error(err)
+                                    }
+                                })
+                            }
+                        }
+                        editorLib.init();
+                    })
+                    .catch(error => console.error('Error fetching JSON file:', error));
             } catch (error) {
-                console.error(error);
+                console.log(error);
             }
-        }
+        })();
 
 
-        function changeLanguage() {
-            const select_lang = document.getElementById('languages');
-            lang = select_lang.value;
-            const ele = document.getElementById('editorCode');
-            if (lang === 'py') {
-                codeEditor.session.setMode('ace/mode/python')
-                codeEditor.setOptions({
-                    enableBasicAutocompletion: true,
-                    enableLiveAutocompletion: true,
-                })
-            }
-            else if (lang === 'js') {
-                codeEditor.session.setMode('ace/mode/javascript')
-                codeEditor.setOptions({
-                    enableBasicAutocompletion: true,
-                    enableLiveAutocompletion: true,
-                })
-            }
-            else if (lang === 'cpp') {
-                codeEditor.session.setMode('ace/mode/c_cpp')
-                codeEditor.setOptions({
-                    enableBasicAutocompletion: true,
-                    enableLiveAutocompletion: true,
-                })
-            }
-            else if (lang === 'ts') {
-                codeEditor.session.setMode('ace/mode/typescript')
-                codeEditor.setOptions({
-                    enableBasicAutocompletion: true,
-                    enableLiveAutocompletion: true,
-                })
-            }
-        }
-        let editorLib = {
-            init() {
-                codeEditor.setOptions({
-                    fontFamily: 'Arial',
-                    fontSize: '12pt',
-                })
-
-                codeEditor.setTheme("ace/theme/monokai");
-
-                executeCode.addEventListener('click', async () => {
-                    input_code = codeEditor.getValue();
-                    try {
-                        const response = await code_execution(input_code, lang, 'http://localhost:3002/code');
-                        const data = response.output;
-                        console.log(response);
-                        const linesArray = data.split('\n');
-                        const output_element = document.getElementsByClassName('editor__console')[0];
-                        const lines = linesArray.map(line => `<li style='color:black; list-style-type: none; ' >${line}</li>`).join(' ');
-                        output_element.innerHTML = lines;
-                    } catch (err) {
-                        console.error(err)
-                    }
-                })
-            }
-        }
-        editorLib.init();
     </script>
 </body>
 
